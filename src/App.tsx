@@ -18,7 +18,7 @@ const App = () => (
       <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <BrowserRouter basename="/yt-competition">
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/vod" element={<VOD />} />
