@@ -17,6 +17,7 @@ import apiKeysRouter from './routes/apiKeys.js';
 import liveApiRouter from './routes/liveApi.js';
 import vodApiRouter from './routes/vodApi.js';
 import clusterApiRouter from './routes/clusterApi.js';
+import { startCleanupJob } from './services/cleanupService.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -60,6 +61,9 @@ app.use((_req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Backend running on http://localhost:${PORT}`);
   console.log(`   CORS allowed for: ${FRONTEND_ORIGIN}`);
+  
+  // Start background jobs
+  startCleanupJob();
 });
 
 export default app;
