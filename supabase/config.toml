@@ -1,0 +1,16 @@
+project_id = "cgzvidpvoxhovjyaifjg"
+
+[functions.api]
+verify_jwt = false
+
+[functions.run-scan]
+verify_jwt = false
+
+[functions.run-vod-scan]
+verify_jwt = false
+
+[functions.vod-api]
+verify_jwt = false
+
+[functions.verify-channel]
+verify_jwt = false

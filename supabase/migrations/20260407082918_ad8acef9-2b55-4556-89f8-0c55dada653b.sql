@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS idx_yt_vod_videos_video_id ON yt_vod_videos(video_id);

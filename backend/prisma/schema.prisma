@@ -1,0 +1,362 @@
+// =============================================================================
+// Prisma Schema — Sociowatch YouTube Competition Tracker
+// Targeting SQLite (Local)
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// CHANNELS
+// =============================================================================
+
+/// YouTube channels being tracked
+model YtChannel {
+  id                 String   @id @default(uuid())
+  networkGroup       String?  @map("network_group")
+  brandCluster       String?  @map("brand_cluster")
+  displayName        String   @map("display_name")
+  youtubeUrl         String   @map("youtube_url")
+  youtubeChannelId   String?  @map("youtube_channel_id")
+  uploadsPlaylistId  String?  @map("uploads_playlist_id")
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
+
+  streams               YtStream[]
+  scanChannelSummaries  YtScanChannelSummary[]
+  scanChannelStatuses   YtScanChannelStatus[]
+  vodVideos             YtVodVideo[]
+  vodScanChannelStatuses YtVodScanChannelStatus[]
+  vodScanVideoStatuses   YtVodScanVideoStatus[]
+
+  @@index([isActive])
+  @@index([networkGroup])
+  @@index([brandCluster])
+  @@map("yt_channels")
+}
+
+// =============================================================================
+// API KEYS
+// =============================================================================
+
+/// YouTube Data API keys for quota rotation
+model YtApiKey {
+  id               String    @id @default(uuid())
+  apiKey           String    @map("api_key")
+  name             String
+  isActive         Boolean   @default(true) @map("is_active")
+  dailyQuota       Int       @default(10000) @map("daily_quota")
+  quotaExceededAt  DateTime? @map("quota_exceeded_at")
+  lastUsedAt       DateTime? @map("last_used_at")
+  lastError        String?   @map("last_error")
+  lastErrorAt      DateTime? @map("last_error_at")
+  errorType        String?   @map("error_type")
+  consecutiveErrors Int      @default(0) @map("consecutive_errors")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  @@map("yt_api_keys")
+}
+
+// =============================================================================
+// LIVE STREAM SCANS
+// =============================================================================
+
+/// Live scan runs — one per snapshot
+model YtScan {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  notes     String?
+
+  streams              YtStream[]               @relation("FirstSeenScan")
+  streamScanMetrics    YtStreamScanMetric[]
+  scanChannelSummaries YtScanChannelSummary[]
+  scanKeywordStats     YtScanKeywordStat[]
+  scanTagStats         YtScanTagStat[]
+  scanChannelStatuses  YtScanChannelStatus[]
+
+  @@index([createdAt(sort: Desc)])
+  @@map("yt_scans")
+}
+
+/// Unique YouTube live video IDs seen across scans
+model YtStream {
+  id             String   @id @default(uuid())
+  videoId        String   @unique @map("video_id")
+  channelId      String   @map("channel_id")
+  title          String
+  description    String?
+  firstSeenScanId String  @map("first_seen_scan_id")
+  tags           String   @default("[]") // SQLite uses String for Json
+  language       String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  channel       YtChannel            @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  firstSeenScan YtScan               @relation("FirstSeenScan", fields: [firstSeenScanId], references: [id], onDelete: Cascade)
+  metrics       YtStreamScanMetric[]
+
+  @@index([videoId])
+  @@index([channelId])
+  @@map("yt_streams")
+}
+
+/// Metrics per scan × stream (concurrent viewers snapshot)
+model YtStreamScanMetric {
+  id                String   @id @default(uuid())
+  scanId            String   @map("scan_id")
+  streamId          String   @map("stream_id")
+  concurrentViewers Int      @default(0) @map("concurrent_viewers")
+  viewCount         BigInt?  @map("view_count")
+  likeCount         BigInt?  @map("like_count")
+  isLive            Boolean  @default(true) @map("is_live")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  scan   YtScan    @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  stream YtStream  @relation(fields: [streamId], references: [id], onDelete: Cascade)
+
+  @@index([scanId])
+  @@index([streamId])
+  @@map("yt_stream_scan_metrics")
+}
+
+/// Aggregated metrics per scan × channel
+model YtScanChannelSummary {
+  id                   String   @id @default(uuid())
+  scanId               String   @map("scan_id")
+  channelId            String   @map("channel_id")
+  totalConcurrentViews Int      @default(0) @map("total_concurrent_views")
+  highestConcurrent    Int      @default(0) @map("highest_concurrent")
+  numberOfStreams       Int      @default(0) @map("number_of_streams")
+  averagePeakPerStream Int      @default(0) @map("average_peak_per_stream")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  scan    YtScan    @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  channel YtChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([scanId, channelId])
+  @@index([scanId])
+  @@map("yt_scan_channel_summary")
+}
+
+/// Title keyword statistics per scan
+model YtScanKeywordStat {
+  id                   String   @id @default(uuid())
+  scanId               String   @map("scan_id")
+  keyword              String
+  usageCount           Int      @default(0) @map("usage_count")
+  totalConcurrentViews Int      @default(0) @map("total_concurrent_views")
+  avgConcurrentViews   Int      @default(0) @map("avg_concurrent_views")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  scan YtScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@unique([scanId, keyword])
+  @@index([scanId])
+  @@map("yt_scan_keyword_stats")
+}
+
+/// Hashtag/tag statistics per scan
+model YtScanTagStat {
+  id                   String   @id @default(uuid())
+  scanId               String   @map("scan_id")
+  tag                  String
+  usageCount           Int      @default(0) @map("usage_count")
+  totalConcurrentViews Int      @default(0) @map("total_concurrent_views")
+  avgConcurrentViews   Int      @default(0) @map("avg_concurrent_views")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  scan YtScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@unique([scanId, tag])
+  @@index([scanId])
+  @@map("yt_scan_tag_stats")
+}
+
+/// Per-channel scan execution status
+model YtScanChannelStatus {
+  id           String   @id @default(uuid())
+  scanId       String   @map("scan_id")
+  channelId    String   @map("channel_id")
+  status       String   @default("pending")
+  streamsFound Int      @default(0) @map("streams_found")
+  errorMessage String?  @map("error_message")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  scan    YtScan    @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  channel YtChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([scanId, channelId])
+  @@index([scanId])
+  @@index([channelId])
+  @@map("yt_scan_channel_status")
+}
+
+// =============================================================================
+// VOD SCANS
+// =============================================================================
+
+/// VOD scan runs — tracks batch YouTube video fetches
+model YtVodScan {
+  id                       String    @id @default(uuid())
+  createdAt                DateTime  @default(now()) @map("created_at")
+  scanType                 String    @default("full") @map("scan_type")
+  dateRangeStart           DateTime? @map("date_range_start")
+  dateRangeEnd             DateTime? @map("date_range_end")
+  videosPerChannel         Int       @default(50) @map("videos_per_channel")
+  totalVideosRequested     Int       @default(0) @map("total_videos_requested")
+  totalVideosFetched       Int       @default(0) @map("total_videos_fetched")
+  channelsSucceeded        Int       @default(0) @map("channels_succeeded")
+  channelsFailed           Int       @default(0) @map("channels_failed")
+  channelsPartial          Int       @default(0) @map("channels_partial")
+  apiKeysUsed              Int       @default(0) @map("api_keys_used")
+  apiKeysExhausted         Int       @default(0) @map("api_keys_exhausted")
+  isComplete               Boolean   @default(false) @map("is_complete")
+  isResumable              Boolean   @default(true) @map("is_resumable")
+  lastProcessedChannelIndex Int      @default(0) @map("last_processed_channel_index")
+  completionReason         String?   @map("completion_reason")
+  notes                    String?
+
+  videos             YtVodVideo[]             @relation("FirstSeenVodScan")
+  metrics            YtVodMetric[]
+  channelStatuses    YtVodScanChannelStatus[]
+  videoStatuses      YtVodScanVideoStatus[]
+  keywordStats       YtVodKeywordStat[]
+  tagStats           YtVodTagStat[]
+
+  @@map("yt_vod_scans")
+}
+
+/// VOD video metadata (unique by YouTube video_id)
+model YtVodVideo {
+  id                  String   @id @default(uuid())
+  videoId             String   @unique @map("video_id")
+  channelId           String   @map("channel_id")
+  title               String
+  description         String?
+  tags                String   @default("[]") // SQLite uses String for Json
+  duration            String?
+  durationSeconds     Int?     @map("duration_seconds")
+  language            String?
+  defaultAudioLanguage String? @map("default_audio_language")
+  categoryId          String?  @map("category_id")
+  publishedAt         DateTime @map("published_at")
+  thumbnailUrl        String?  @map("thumbnail_url")
+  hasCaptions         Boolean  @default(false) @map("has_captions")
+  isLicensedContent   Boolean  @default(false) @map("is_licensed_content")
+  privacyStatus       String?  @map("privacy_status")
+  firstSeenScanId     String   @map("first_seen_scan_id")
+  lastUpdatedAt       DateTime @default(now()) @map("last_updated_at")
+  isDeleted           Boolean  @default(false) @map("is_deleted")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  channel       YtChannel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  firstSeenScan YtVodScan    @relation("FirstSeenVodScan", fields: [firstSeenScanId], references: [id], onDelete: Cascade)
+  metrics       YtVodMetric[]
+
+  @@index([channelId, publishedAt(sort: Desc)])
+  @@index([videoId])
+  @@map("yt_vod_videos")
+}
+
+/// Point-in-time view/like/comment snapshots per VOD video × scan
+model YtVodMetric {
+  id            String   @id @default(uuid())
+  videoId       String   @map("video_id")
+  scanId        String   @map("scan_id")
+  viewCount     BigInt   @default(0) @map("view_count")
+  likeCount     BigInt?  @map("like_count")
+  commentCount  BigInt?  @map("comment_count")
+  favoriteCount BigInt?  @map("favorite_count")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  video YtVodVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  scan  YtVodScan  @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@unique([scanId, videoId])
+  @@index([videoId, createdAt(sort: Desc)])
+  @@index([scanId])
+  @@map("yt_vod_metrics")
+}
+
+/// Per-channel status within a VOD scan
+model YtVodScanChannelStatus {
+  id                   String    @id @default(uuid())
+  scanId               String    @map("scan_id")
+  channelId            String    @map("channel_id")
+  status               String    @default("pending")
+  videosRequested      Int       @default(0) @map("videos_requested")
+  videosFetched        Int       @default(0) @map("videos_fetched")
+  errorMessage         String?   @map("error_message")
+  errorType            String?   @map("error_type")
+  lastVideoPublishedAt DateTime? @map("last_video_published_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+
+  scan    YtVodScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  channel YtChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([scanId, channelId])
+  @@index([scanId])
+  @@map("yt_vod_scan_channel_status")
+}
+
+/// Per-video fetch status within a VOD scan
+model YtVodScanVideoStatus {
+  id           String   @id @default(uuid())
+  scanId       String   @map("scan_id")
+  videoId      String   @map("video_id")
+  channelId    String   @map("channel_id")
+  status       String   @default("pending")
+  errorMessage String?  @map("error_message")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  scan    YtVodScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  channel YtChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([scanId, videoId])
+  @@index([scanId])
+  @@map("yt_vod_scan_video_status")
+}
+
+/// Keyword analytics aggregated per VOD scan
+model YtVodKeywordStat {
+  id                 String   @id @default(uuid())
+  scanId             String   @map("scan_id")
+  keyword            String
+  usageCount         Int      @default(0) @map("usage_count")
+  totalViews         BigInt   @default(0) @map("total_views")
+  avgViews           BigInt   @default(0) @map("avg_views")
+  totalLikes         BigInt   @default(0) @map("total_likes")
+  avgLikes           BigInt   @default(0) @map("avg_likes")
+  avgEngagementRate  Float?   @map("avg_engagement_rate")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  scan YtVodScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@index([scanId, avgViews(sort: Desc)])
+  @@map("yt_vod_keyword_stats")
+}
+
+/// Tag analytics aggregated per VOD scan
+model YtVodTagStat {
+  id                String   @id @default(uuid())
+  scanId            String   @map("scan_id")
+  tag               String
+  usageCount        Int      @default(0) @map("usage_count")
+  totalViews        BigInt   @default(0) @map("total_views")
+  avgViews          BigInt   @default(0) @map("avg_views")
+  totalLikes        BigInt   @default(0) @map("total_likes")
+  avgEngagementRate Float?   @map("avg_engagement_rate")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  scan YtVodScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@index([scanId, usageCount(sort: Desc)])
+  @@map("yt_vod_tag_stats")
+}
