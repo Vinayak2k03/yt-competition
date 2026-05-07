@@ -1,0 +1,16 @@
+[Unit]
+Description=Sociowatch Go Backend
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/sociowatch/backend-go
+ExecStart=/opt/sociowatch/backend-go/server
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/sociowatch/backend-go/server.log
+StandardError=append:/opt/sociowatch/backend-go/server.log
+
+[Install]
+WantedBy=multi-user.target

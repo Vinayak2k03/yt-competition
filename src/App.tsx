@@ -16,18 +16,18 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter basename="/yt-competition">
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/vod" element={<VOD />} />
-              <Route path="/api-keys" element={<ApiKeys />} />
-              <Route path="/channels" element={<Channels />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter basename="/yt-competition">
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/vod" element={<VOD />} />
+            <Route path="/api-keys" element={<ApiKeys />} />
+            <Route path="/channels" element={<Channels />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>

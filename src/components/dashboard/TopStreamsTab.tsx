@@ -147,7 +147,9 @@ export function TopStreamsTab({ data, isLoading }: TopStreamsTabProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">{stream.channelName}</span>
+                      <span className="text-sm">
+                        {stream.channelName?.trim() || stream.brandCluster?.trim() || (stream.networkGroup === "TIMES" ? "Times Network" : "Competition")}
+                      </span>
                       <Badge
                         variant="secondary"
                         className={

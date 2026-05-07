@@ -167,11 +167,14 @@ export function VODVideosTab({ data, isLoading: initialLoading, scanId }: VODVid
             </SelectTrigger>
             <SelectContent className="bg-popover border border-border shadow-lg z-50">
               <SelectItem value="all">All Networks</SelectItem>
-              {networks.map((network) => (
-                <SelectItem key={network} value={network}>
-                  {network}
-                </SelectItem>
-              ))}
+              {networks.map((network) => {
+                const val = network || 'unknown';
+                return (
+                  <SelectItem key={val} value={val}>
+                    {network || 'Unknown Network'}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -184,11 +187,14 @@ export function VODVideosTab({ data, isLoading: initialLoading, scanId }: VODVid
             </SelectTrigger>
             <SelectContent className="bg-popover border border-border shadow-lg z-50 max-h-[300px]">
               <SelectItem value="all">All Channels</SelectItem>
-              {channels.map((channel) => (
-                <SelectItem key={channel} value={channel}>
-                  {channel}
-                </SelectItem>
-              ))}
+              {channels.map((channel) => {
+                const val = channel || 'unknown';
+                return (
+                  <SelectItem key={val} value={val}>
+                    {channel || 'Unknown Channel'}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>

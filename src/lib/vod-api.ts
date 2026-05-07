@@ -10,7 +10,7 @@ import type {
 export type { VODScan, VODChannelOverview, VODVideo, VODVideosResponse, VODKeywordStat, VODTagStat, VODScanHealth };
 export { formatDuration, formatViews, formatNumber, formatDateTime, formatDate };
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL ?? 'https://watchmonitor.sociofyme.com/yt-competition';
 
 function getAuthHeaders(): Record<string, string> {
   return {};

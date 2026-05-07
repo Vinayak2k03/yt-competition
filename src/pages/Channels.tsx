@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL ?? 'https://watchmonitor.sociofyme.com/yt-competition';
 const authHeaders = () => {
   return { 'Content-Type': 'application/json' };
 };
@@ -17,7 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, Pencil, Trash2, ArrowLeft, Youtube, AlertCircle, ExternalLink, CheckCircle2, Loader2, Search } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Youtube, AlertCircle, ExternalLink, CheckCircle2, Loader2, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Link, Navigate } from 'react-router-dom';
 
@@ -65,12 +65,12 @@ const youtubeChannelSchema = z.object({
 
 type ChannelFormData = z.infer<typeof youtubeChannelSchema>;
 
-function ChannelFormDialog({ 
-  channel, 
-  onClose, 
-  mode 
-}: { 
-  channel?: Channel; 
+function ChannelFormDialog({
+  channel,
+  onClose,
+  mode
+}: {
+  channel?: Channel;
   onClose: () => void;
   mode: 'add' | 'edit';
 }) {
@@ -137,7 +137,7 @@ function ChannelFormDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    
+
     const result = youtubeChannelSchema.safeParse(formData);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -151,7 +151,7 @@ function ChannelFormDialog({
     }
 
     setIsSubmitting(true);
-    
+
     try {
       const payload = {
         display_name: formData.display_name.trim(),
@@ -174,14 +174,14 @@ function ChannelFormDialog({
         if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to update channel');
         toast({ title: 'Channel updated successfully' });
       }
-      
+
       queryClient.invalidateQueries({ queryKey: ['channels'] });
       onClose();
     } catch (error: any) {
-      toast({ 
-        title: 'Error saving channel', 
+      toast({
+        title: 'Error saving channel',
         description: error.message,
-        variant: 'destructive' 
+        variant: 'destructive'
       });
     } finally {
       setIsSubmitting(false);
@@ -205,8 +205,8 @@ function ChannelFormDialog({
             disabled={isSubmitting || isVerifying}
             className="flex-1"
           />
-          <Button 
-            type="button" 
+          <Button
+            type="button"
             variant="secondary"
             onClick={verifyChannel}
             disabled={isSubmitting || isVerifying || !formData.youtube_url.trim()}
@@ -288,7 +288,7 @@ function ChannelFormDialog({
           </p>
         )}
       </div>
-      
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="network_group">Network Group</Label>
@@ -305,7 +305,7 @@ function ChannelFormDialog({
             </SelectContent>
           </Select>
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="brand_cluster">Brand Cluster</Label>
           <Input
@@ -317,7 +317,7 @@ function ChannelFormDialog({
           />
         </div>
       </div>
-      
+
       <DialogFooter>
         <DialogClose asChild>
           <Button type="button" variant="outline" disabled={isSubmitting}>
@@ -337,7 +337,6 @@ export default function Channels() {
   const authLoading = false;
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const { data: channels, isLoading } = useQuery({
@@ -372,10 +371,10 @@ export default function Channels() {
       setDeleteConfirm(null);
     },
     onError: (error: any) => {
-      toast({ 
-        title: 'Error deleting channel', 
+      toast({
+        title: 'Error deleting channel',
         description: error.message,
-        variant: 'destructive' 
+        variant: 'destructive'
       });
     },
   });
@@ -410,7 +409,7 @@ export default function Channels() {
           </Link>
           <div className="flex-1">
             <h1 className="text-2xl font-bold">Manage Channels</h1>
-            <p className="text-muted-foreground">Add, edit, or remove YouTube channels to track</p>
+            <p className="text-muted-foreground">Add or remove YouTube channels to track</p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -423,9 +422,9 @@ export default function Channels() {
               <DialogHeader>
                 <DialogTitle>Add New Channel</DialogTitle>
               </DialogHeader>
-              <ChannelFormDialog 
-                mode="add" 
-                onClose={() => setDialogOpen(false)} 
+              <ChannelFormDialog
+                mode="add"
+                onClose={() => setDialogOpen(false)}
               />
             </DialogContent>
           </Dialog>
@@ -500,7 +499,7 @@ export default function Channels() {
                           </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          <a 
+                          <a
                             href={channel.youtube_url.startsWith('http') ? channel.youtube_url : `https://youtube.com/${channel.youtube_url}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -520,45 +519,20 @@ export default function Channels() {
                         <TableCell>
                           <Switch
                             checked={channel.is_active}
-                            onCheckedChange={(checked) => 
+                            onCheckedChange={(checked) =>
                               toggleActiveMutation.mutate({ id: channel.id, is_active: checked })
                             }
                           />
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
-                            <Dialog 
-                              open={editingChannel?.id === channel.id} 
-                              onOpenChange={(open) => !open && setEditingChannel(null)}
-                            >
-                              <DialogTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={() => setEditingChannel(channel)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>Edit Channel</DialogTitle>
-                                </DialogHeader>
-                                <ChannelFormDialog 
-                                  channel={channel} 
-                                  mode="edit" 
-                                  onClose={() => setEditingChannel(null)} 
-                                />
-                              </DialogContent>
-                            </Dialog>
-                            
-                            <Dialog 
-                              open={deleteConfirm === channel.id} 
+                            <Dialog
+                              open={deleteConfirm === channel.id}
                               onOpenChange={(open) => !open && setDeleteConfirm(null)}
                             >
                               <DialogTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
+                                <Button
+                                  variant="ghost"
                                   size="icon"
                                   onClick={() => setDeleteConfirm(channel.id)}
                                 >
@@ -576,8 +550,8 @@ export default function Channels() {
                                   <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
                                     Cancel
                                   </Button>
-                                  <Button 
-                                    variant="destructive" 
+                                  <Button
+                                    variant="destructive"
                                     onClick={() => deleteMutation.mutate(channel.id)}
                                     disabled={deleteMutation.isPending}
                                   >

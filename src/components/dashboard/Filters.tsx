@@ -40,11 +40,14 @@ export function Filters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Clusters</SelectItem>
-          {brandClusters.map((cluster) => (
-            <SelectItem key={cluster} value={cluster}>
-              {cluster}
-            </SelectItem>
-          ))}
+          {brandClusters.map((cluster) => {
+            const val = cluster || 'unassigned';
+            return (
+              <SelectItem key={val} value={val}>
+                {cluster || 'Unassigned'}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
     </div>

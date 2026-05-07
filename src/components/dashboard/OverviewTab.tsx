@@ -77,6 +77,25 @@ export function OverviewTab({
   onBrandChange,
   onRefreshComplete,
 }: OverviewTabProps) {
+  const normalizeNetworkGroup = (value?: string) => (value ?? "").trim().toUpperCase();
+  const matchesNetworkFilter = (value: string, filter: string) => {
+    if (filter === "all") return true;
+    const normalizedValue = normalizeNetworkGroup(value);
+    const normalizedFilter = normalizeNetworkGroup(filter);
+    if (!normalizedValue) return false;
+    if (normalizedValue === normalizedFilter) return true;
+    if (normalizedFilter === "TIMES" && normalizedValue.startsWith("TIMES")) return true;
+    return false;
+  };
+
+  const uniqueData = useMemo(() => {
+    const map = new Map<string, OverviewItem>();
+    data.forEach((item) => {
+      map.set(item.channelId, item);
+    });
+    return Array.from(map.values());
+  }, [data]);
+
   const [refreshingChannels, setRefreshingChannels] = useState<Set<string>>(new Set());
 
   const handleRefreshChannel = async (channelId: string, channelName: string) => {
@@ -101,17 +120,17 @@ export function OverviewTab({
   };
 
   const brandClusters = useMemo(() => {
-    const clusters = new Set(data.map((item) => item.brandCluster));
+    const clusters = new Set(uniqueData.map((item) => item.brandCluster));
     return Array.from(clusters).sort();
-  }, [data]);
+  }, [uniqueData]);
 
   const filteredData = useMemo(() => {
-    return data.filter((item) => {
-      if (networkFilter !== "all" && item.networkGroup !== networkFilter) return false;
+    return uniqueData.filter((item) => {
+      if (!matchesNetworkFilter(item.networkGroup, networkFilter)) return false;
       if (brandFilter !== "all" && item.brandCluster !== brandFilter) return false;
       return true;
     });
-  }, [data, networkFilter, brandFilter]);
+  }, [uniqueData, networkFilter, brandFilter]);
 
   const totals = useMemo(() => {
     return filteredData.reduce(

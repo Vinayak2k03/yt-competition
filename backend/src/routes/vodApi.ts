@@ -283,6 +283,12 @@ router.get('/publish-timing', async (req: Request, res: Response) => {
     const daily: Record<number, { count: number; totalViews: number; totalLikes: number }> = {};
     let totalViews = 0, totalLikes = 0;
 
+    const channelPatternsMap = new Map<string, { channelId: string; channelName: string; networkGroup: string; videoCount: number; totalViews: number; hourlyCount: Record<number, number> }>();
+    const perChannelHeatmap: Record<string, Record<string, { count: number; totalViews: number }>> = {};
+    const compMap: Record<string, Set<string>> = {};
+    const compStats: Record<string, { count: number; totalViews: number }> = {};
+    const freqMap: Record<string, { date: string; channelId: string; channelName: string; count: number }> = {};
+
     for (const v of videos) {
       const d = new Date(v.publishedAt);
       const day = d.getUTCDay();
@@ -300,6 +306,29 @@ router.get('/publish-timing', async (req: Request, res: Response) => {
 
       const dy = daily[day] || { count: 0, totalViews: 0, totalLikes: 0 };
       dy.count++; dy.totalViews += views; dy.totalLikes += likes; daily[day] = dy;
+
+      const chId = v.channel.id;
+      const chName = v.channel.displayName;
+      const ng = v.channel.networkGroup ?? 'COMPETITION';
+      const dateStr = d.toISOString().split('T')[0];
+
+      const cp = channelPatternsMap.get(chId) || { channelId: chId, channelName: chName, networkGroup: ng, videoCount: 0, totalViews: 0, hourlyCount: {} };
+      cp.videoCount++; cp.totalViews += views;
+      cp.hourlyCount[hour] = (cp.hourlyCount[hour] || 0) + 1;
+      channelPatternsMap.set(chId, cp);
+
+      if (!perChannelHeatmap[chId]) perChannelHeatmap[chId] = {};
+      const pch = perChannelHeatmap[chId][key] || { count: 0, totalViews: 0 };
+      pch.count++; pch.totalViews += views; perChannelHeatmap[chId][key] = pch;
+
+      if (!compMap[key]) compMap[key] = new Set();
+      compMap[key].add(chId);
+      const cst = compStats[key] || { count: 0, totalViews: 0 };
+      cst.count++; cst.totalViews += views; compStats[key] = cst;
+
+      const freqKey = `${dateStr}_${chId}`;
+      const fq = freqMap[freqKey] || { date: dateStr, channelId: chId, channelName: chName, count: 0 };
+      fq.count++; freqMap[freqKey] = fq;
     }
 
     const heatmapArr = Object.entries(heatmap).map(([key, v]) => {
@@ -326,10 +355,33 @@ router.get('/publish-timing', async (req: Request, res: Response) => {
       topSlots: heatmapArr.sort((a, b) => b.avgViews - a.avgViews).slice(0, 10).map(s => ({
         ...s, dayName: DAYS[s.day], label: `${DAYS[s.day]} ${s.hour}:00`,
       })),
-      channelPatterns: [],
-      perChannelHeatmap: {},
-      competitionIntensity: [],
-      dailyFrequency: [],
+      channelPatterns: Array.from(channelPatternsMap.values()).map(cp => {
+        let peakHour = -1;
+        let peakHourCount = -1;
+        for (const [h, count] of Object.entries(cp.hourlyCount)) {
+          if (count > peakHourCount) {
+            peakHour = Number(h);
+            peakHourCount = count;
+          }
+        }
+        return {
+          channelId: cp.channelId, channelName: cp.channelName, networkGroup: cp.networkGroup,
+          videoCount: cp.videoCount, avgViews: cp.videoCount > 0 ? Math.round(cp.totalViews / cp.videoCount) : 0,
+          peakHour, peakHourCount,
+        };
+      }),
+      perChannelHeatmap: Object.fromEntries(Object.entries(perChannelHeatmap).map(([chId, hm]) => [
+        chId, Object.entries(hm).map(([key, v]) => {
+          const [day, hour] = key.split('_').map(Number);
+          return { day, hour, count: v.count, avgViews: v.count > 0 ? Math.round(v.totalViews / v.count) : 0, totalViews: v.totalViews };
+        })
+      ])),
+      competitionIntensity: Object.entries(compMap).map(([key, channelsSet]) => {
+        const s = compStats[key];
+        const [day, hour] = key.split('_').map(Number);
+        return { day, hour, channelCount: channelsSet.size, totalViews: s.totalViews, avgViews: s.count > 0 ? Math.round(s.totalViews / s.count) : 0 };
+      }),
+      dailyFrequency: Object.values(freqMap),
       aggregateStats: {
         totalVideos: videos.length, totalViews,
         avgViewsPerVideo: videos.length > 0 ? Math.round(totalViews / videos.length) : 0,

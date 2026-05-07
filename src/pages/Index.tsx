@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
-const _API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+const _API_URL = import.meta.env.VITE_API_URL ?? 'https://watchmonitor.sociofyme.com/yt-competition';
 const _authHdr = () => { return { 'Content-Type': 'application/json' }; };
 import { AppNavigation } from "@/components/AppNavigation";
 import { TabNavigation, TabId } from "@/components/dashboard/TabNavigation";
@@ -201,8 +201,8 @@ export default function Index() {
     }
   };
 
-  const totalChannels = scanHealth 
-    ? scanHealth.channelsSucceeded + scanHealth.channelsFailed + scanHealth.channelsPartial 
+  const totalChannels = scanHealth
+    ? scanHealth.channelsSucceeded + scanHealth.channelsFailed + scanHealth.channelsPartial
     : 0;
   const hasIssues = scanHealth && (scanHealth.channelsFailed > 0 || scanHealth.channelsPartial > 0);
   const failedChannels = scanHealth?.channels.filter(c => c.status === 'failed') || [];
@@ -257,25 +257,25 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       <AppNavigation />
-      
+
       {/* Sub-header with scan controls */}
       <div className="border-b border-border bg-card/50">
         <div className="container mx-auto px-4 md:px-6 py-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-lg font-semibold">Live Streams</h2>
-              
+
               {latestScan && (
                 <LastUpdatedBadge timestamp={latestScan.created_at} />
               )}
-              
+
               {/* Scan Health Indicator */}
               {scanHealth && totalChannels > 0 && (
                 <Collapsible open={healthExpanded} onOpenChange={setHealthExpanded}>
                   <CollapsibleTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className={`gap-2 h-7 ${hasIssues ? 'text-amber-600' : 'text-green-600'}`}
                     >
                       {hasIssues ? (
@@ -294,14 +294,14 @@ export default function Index() {
                 </Collapsible>
               )}
             </div>
-            
+
             <div className="flex items-center gap-2">
               <ScanSelector
                 selectedScanId={selectedScanId}
                 onScanChange={handleScanChange}
                 latestScanId={latestScan?.id || null}
               />
-              
+
               <Button
                 onClick={handleRunScan}
                 disabled={isScanning || !hasApiKeys || !hasChannels}
@@ -313,7 +313,7 @@ export default function Index() {
               </Button>
             </div>
           </div>
-          
+
           {/* Progress bar during scanning */}
           {isScanning && progressTotal > 0 && (
             <Collapsible open={progressExpanded} onOpenChange={setProgressExpanded}>
@@ -331,7 +331,7 @@ export default function Index() {
                   </div>
                 </div>
                 <Progress value={progressPercent} className="h-2" />
-                
+
                 <CollapsibleContent>
                   <ScanProgressPanel
                     channels={progressChannels}
@@ -372,8 +372,8 @@ export default function Index() {
               )}
             </div>
           )}
-          
-          
+
+
           {latestScan?.hasNewerFailedScans && latestScan?.failedScanCount && latestScan.failedScanCount > 0 && (
             <Alert variant="destructive" className="mt-3 bg-amber-500/10 border-amber-500/30 text-amber-600">
               <AlertTriangle className="h-4 w-4" />
@@ -384,9 +384,9 @@ export default function Index() {
           )}
         </div>
       </div>
-      
+
       <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-      
+
       <main className="container mx-auto px-4 md:px-6 py-6 space-y-6">
         {/* Onboarding Checklist */}
         {showOnboarding && (
@@ -399,7 +399,7 @@ export default function Index() {
             isScanning={isScanning}
           />
         )}
-        
+
         {renderTabContent()}
       </main>
     </div>

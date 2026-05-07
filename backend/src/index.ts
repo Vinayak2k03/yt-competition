@@ -20,8 +20,8 @@ import clusterApiRouter from './routes/clusterApi.js';
 import { startCleanupJob } from './services/cleanupService.js';
 
 const app = express();
-const PORT = parseInt(process.env.PORT ?? '3001', 10);
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? 'http://localhost:8080';
+const PORT = parseInt(process.env.PORT ?? '3002', 10);
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? 'http://localhost:8083';
 
 // ---------------------------------------------------------------------------
 // Middleware
@@ -61,7 +61,7 @@ app.use((_req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Backend running on http://localhost:${PORT}`);
   console.log(`   CORS allowed for: ${FRONTEND_ORIGIN}`);
-  
+
   // Start background jobs
   startCleanupJob();
 });

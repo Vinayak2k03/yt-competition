@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
   base: "/yt-competition/",
   server: {
     host: "::",
-    port: 8080,
+    port: 8083,
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

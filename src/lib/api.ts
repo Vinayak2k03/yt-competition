@@ -17,7 +17,7 @@ export type ScanHealth = LiveScanHealth;
 export type { ScanListItem, Channel };
 export { formatNumber, formatTime, formatDateTime };
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL ?? 'https://watchmonitor.sociofyme.com/yt-competition';
 
 function getAuthHeaders(): Record<string, string> {
   return {};

@@ -13,7 +13,39 @@ interface VODOverviewTabProps {
   onBrandChange: (value: string) => void;
 }
 
-export function VODOverviewTab({ data, isLoading }: VODOverviewTabProps) {
+export function VODOverviewTab({
+  data,
+  isLoading,
+  networkFilter,
+  brandFilter,
+}: VODOverviewTabProps) {
+  const normalizeNetworkGroup = (value?: string) => (value ?? "").trim().toUpperCase();
+  const matchesNetworkFilter = (value: string, filter: string) => {
+    if (filter === "all") return true;
+    const normalizedValue = normalizeNetworkGroup(value);
+    const normalizedFilter = normalizeNetworkGroup(filter);
+    if (!normalizedValue) return false;
+    if (normalizedValue === normalizedFilter) return true;
+    if (normalizedFilter === "TIMES" && normalizedValue.startsWith("TIMES")) return true;
+    return false;
+  };
+
+  const uniqueData = data.reduce<VODChannelOverview[]>((acc, item) => {
+    const existingIndex = acc.findIndex((entry) => entry.channelId === item.channelId);
+    if (existingIndex >= 0) {
+      acc[existingIndex] = item;
+    } else {
+      acc.push(item);
+    }
+    return acc;
+  }, []);
+
+  const filteredData = uniqueData.filter((item) => {
+    if (!matchesNetworkFilter(item.networkGroup, networkFilter)) return false;
+    if (brandFilter !== "all" && item.brandCluster !== brandFilter) return false;
+    return true;
+  });
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -48,14 +80,14 @@ export function VODOverviewTab({ data, isLoading }: VODOverviewTabProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.length === 0 ? (
+          {filteredData.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                 No VOD data found. Run a VOD scan to get started.
               </TableCell>
             </TableRow>
           ) : (
-            data.map((item) => (
+            filteredData.map((item) => (
               <TableRow key={item.channelId}>
                 <TableCell className="font-medium">{item.channelName}</TableCell>
                 <TableCell>

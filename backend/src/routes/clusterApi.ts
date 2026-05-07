@@ -37,7 +37,7 @@ async function fetchChannelFromYoutube(url: string) {
   }
 
   const response = await fetch(searchUrl);
-  const data = await response.json();
+  const data: any = await response.json();
 
   if (!response.ok) {
     throw new Error(data.error?.message || 'YouTube API error');

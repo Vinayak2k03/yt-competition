@@ -1,0 +1,14 @@
+server:
+  port: "8000"
+
+database:
+  # Path to your SQLite database file. 
+  # Relative paths are relative to where you start the binary.
+  url: "../backend/prisma/dev.db"
+
+cors:
+  allowed_origins:
+    - "*"
+
+auth:
+  jwt_secret: "testing123fsabfsafoabfosaibfoaf"

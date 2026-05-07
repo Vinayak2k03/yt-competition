@@ -244,14 +244,14 @@ export async function resolveChannelId(keyManager: ApiKeyManager, youtubeUrl: st
     const { response, error } = await fetchWithRetry(apiUrl.toString(), keyManager);
     if (error || !response) return null;
 
-    const data = await response.json();
+    const data: any = await response.json();
     if (data.items?.length > 0) return data.items[0].id;
 
     if (searchType === 'forHandle') {
       apiUrl.searchParams.delete('forHandle');
       apiUrl.searchParams.set('forUsername', identifier);
       const { response: r2 } = await fetchWithRetry(apiUrl.toString(), keyManager);
-      if (r2) { const d2 = await r2.json(); if (d2.items?.length > 0) return d2.items[0].id; }
+      if (r2) { const d2: any = await r2.json(); if (d2.items?.length > 0) return d2.items[0].id; }
     }
 
     return null;
@@ -412,11 +412,10 @@ export async function runLiveScan(channelIdToRefresh?: string): Promise<{
 
   if (metricsBuffer.length > 0) {
     await prisma.ytStreamScanMetric.createMany({
-      data: metricsBuffer.filter(m => m.streamId).map(m => ({
-        scanId, streamId: m.streamId!, concurrentViewers: m.concurrentViewers,
+      data: metricsBuffer.map(m => ({
+        scanId, streamId: m.streamId, concurrentViewers: m.concurrentViewers,
         viewCount: m.viewCount ? BigInt(m.viewCount) : null,
         likeCount: m.likeCount ? BigInt(m.likeCount) : null,
-        isLive: true,
       })),
     });
   }
@@ -424,31 +423,30 @@ export async function runLiveScan(channelIdToRefresh?: string): Promise<{
   if (channelMetrics.size > 0) {
     await prisma.ytScanChannelSummary.createMany({
       data: Array.from(channelMetrics.entries()).map(([chId, m]) => ({
-        scanId, channelId: chId,
-        totalConcurrentViews: m.total,
-        highestConcurrent: m.highest,
-        numberOfStreams: m.count,
-        averagePeakPerStream: m.count > 0 ? Math.round(m.total / m.count) : 0,
+        scanId, channelId: chId, totalConcurrentViews: m.total, highestConcurrent: m.highest,
+        numberOfStreams: m.count, averagePeakPerStream: m.count > 0 ? Math.round(m.total / m.count) : 0,
       })),
     });
   }
 
-  if (keywordStats.size > 0) {
-    await prisma.ytScanKeywordStat.createMany({
-      data: Array.from(keywordStats.entries()).map(([keyword, s]) => ({
-        scanId, keyword, usageCount: s.count, totalConcurrentViews: s.totalViewers,
-        avgConcurrentViews: Math.round(s.totalViewers / s.count),
-      })),
-    });
-  }
+  if (!isSingle) {
+    if (keywordStats.size > 0) {
+      await prisma.ytScanKeywordStat.createMany({
+        data: Array.from(keywordStats.entries()).map(([keyword, s]) => ({
+          scanId, keyword, usageCount: s.count, totalConcurrentViews: s.totalViewers,
+          avgConcurrentViews: Math.round(s.totalViewers / s.count),
+        })),
+      });
+    }
 
-  if (tagStats.size > 0) {
-    await prisma.ytScanTagStat.createMany({
-      data: Array.from(tagStats.entries()).map(([tag, s]) => ({
-        scanId, tag, usageCount: s.count, totalConcurrentViews: s.totalViewers,
-        avgConcurrentViews: Math.round(s.totalViewers / s.count),
-      })),
-    });
+    if (tagStats.size > 0) {
+      await prisma.ytScanTagStat.createMany({
+        data: Array.from(tagStats.entries()).map(([tag, s]) => ({
+          scanId, tag, usageCount: s.count, totalConcurrentViews: s.totalViewers,
+          avgConcurrentViews: Math.round(s.totalViewers / s.count),
+        })),
+      });
+    }
   }
 
   console.log('Live scan completed successfully');
@@ -490,7 +488,7 @@ async function searchLiveStreams(
       const { response, error } = await fetchWithRetry(url.toString(), keyManager);
       if (error || !response) { lastError = error; break; }
 
-      const data = await response.json();
+      const data: any = await response.json();
       if (data.items?.length > 0) allItems.push(...data.items);
       nextPageToken = data.nextPageToken || null;
       pageCount++;
@@ -520,7 +518,7 @@ async function getVideoDetails(keyManager: ApiKeyManager, videoIds: string[], sc
     url.searchParams.set('part', 'snippet,liveStreamingDetails,statistics');
     url.searchParams.set('id', batch.join(','));
     const { response } = await fetchWithRetry(url.toString(), keyManager);
-    if (response) { const data = await response.json(); if (data.items) results.push(...data.items); }
+    if (response) { const data: any = await response.json(); if (data.items) results.push(...data.items); }
   }
   return results;
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL ?? 'https://watchmonitor.sociofyme.com/yt-competition';
 const authHeaders = () => {
   return { 'Content-Type': 'application/json' };
 };
@@ -37,7 +37,7 @@ const getErrorBadge = (key: ApiKey) => {
   if (key.quota_exceeded_at) {
     return { label: "Quota Exceeded", variant: "destructive" as const, icon: XCircle, color: "text-destructive" };
   }
-  
+
   if (key.error_type) {
     const errorMap: Record<ErrorType, { label: string; variant: "destructive" | "secondary" | "outline"; icon: any; color: string }> = {
       quota: { label: "Quota Exceeded", variant: "destructive", icon: XCircle, color: "text-destructive" },
@@ -49,11 +49,11 @@ const getErrorBadge = (key: ApiKey) => {
     };
     return errorMap[key.error_type as ErrorType] || errorMap.other;
   }
-  
+
   if (!key.is_active) {
     return { label: "Inactive", variant: "secondary" as const, icon: HelpCircle, color: "text-muted-foreground" };
   }
-  
+
   return null;
 };
 
@@ -249,7 +249,7 @@ export default function ApiKeys() {
                     {apiKeys.map((key) => {
                       const errorBadge = getErrorBadge(key);
                       const hasError = key.quota_exceeded_at || key.error_type;
-                      
+
                       return (
                         <TableRow key={key.id}>
                           <TableCell className="font-medium">{key.name}</TableCell>
@@ -305,7 +305,7 @@ export default function ApiKeys() {
                             )}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {key.last_used_at 
+                            {key.last_used_at
                               ? format(new Date(key.last_used_at), "MMM d, HH:mm")
                               : "Never"}
                           </TableCell>

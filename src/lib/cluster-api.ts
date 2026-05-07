@@ -3,7 +3,7 @@
  */
 import type { NetworkGroup } from './types';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL ?? 'https://watchmonitor.sociofyme.com/yt-competition';
 
 export interface BrandCluster {
   id: string; name: string;

@@ -67,7 +67,7 @@ async function getUploadsPlaylistId(
   const { response, error, allExhausted } = await fetchWithRetry(url.toString(), keyManager);
   if (error || !response) return { playlistId: null, allExhausted: allExhausted ?? false };
 
-  const data = await response.json();
+  const data: any = await response.json();
   const playlistId = data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
   if (!playlistId) return { playlistId: null, allExhausted: false };
 
@@ -101,7 +101,7 @@ async function getPlaylistVideoIds(
     const { response, error, allExhausted: ex } = await fetchWithRetry(url.toString(), keyManager);
     if (error || !response) { allExhausted = ex ?? false; break; }
 
-    const data = await response.json();
+    const data: any = await response.json();
     for (const item of (data.items || [])) {
       const videoId = item.snippet?.resourceId?.videoId;
       const publishedAt = item.snippet?.publishedAt;
@@ -258,7 +258,7 @@ async function processChannel(
     const { response, error, allExhausted: ex } = await fetchWithRetry(url.toString(), keyManager);
     if (error || !response) { allExhausted = ex ?? false; if (allExhausted) break; continue; }
 
-    const data = await response.json();
+    const data: any = await response.json();
     const fetched: any[] = data.items || [];
 
     // Persist in 25-video sub-batches
